@@ -1,6 +1,16 @@
-require("@nomicfoundation/hardhat-toolbox")
-require("./tasks")
-require("dotenv").config()
+require("@nomicfoundation/hardhat-toolbox");
+require("./tasks");
+require("dotenv").config();
+
+
+require("hardhat-preprocessor");
+
+const REMAP = {
+  "@openzeppelin/contracts@4.7.3": "@openzeppelin/contracts-4.7.3",
+  "@openzeppelin/contracts@4.9.6": "@openzeppelin/contracts-4.9.6",
+  "@openzeppelin/contracts@5.0.2": "@openzeppelin/contracts-5.0.2",
+  "@openzeppelin/contracts@5.1.0": "@openzeppelin/contracts-5.1.0",
+};
 
 const COMPILER_SETTINGS = {
     optimizer: {
@@ -32,7 +42,22 @@ const POLYGONSCAN_API_KEY = process.env.POLYGONSCAN_API_KEY || "Your polygonscan
 const REPORT_GAS = process.env.REPORT_GAS || false
 
 /** @type import('hardhat/config').HardhatUserConfig */
-module.exports = {
+module.exports = {  
+  preprocess: {
+    eachLine: (_hre) => ({
+      transform: (line /*, { filepath } */) => {
+        const trimmed = typeof line === "string" ? line.trim() : line;
+        if (typeof trimmed === "string" && trimmed.startsWith("import ")) {
+          for (const [from, to] of Object.entries(REMAP)) {
+            if (line.includes(`"${from}`) || line.includes(`'${from}`)) {
+              return line.replace(from, to);
+            }
+          }
+        }
+        return line;
+      }
+    }),
+  },
     solidity: {
         compilers: [
             {
